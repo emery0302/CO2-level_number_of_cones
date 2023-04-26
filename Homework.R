@@ -1,35 +1,36 @@
 Dat <- read.table(file = 'PineCones.txt')
 head(Dat)
 
-# Question 1
-# model (1)
+
+# Model (1)
 X <- Dat$diam
 Y <- Dat$cones
 
-plot(X,Y,xlab ="diam", ylab ='cones')
+plot(X, Y, xlab = "diam", ylab = 'cones')
 
 mu.fn.1 <- function(par, diam){
   M <-par["b0"] + par["b1"]*log(diam)
   return(M)
 }
 
-negloglik.fn1 <- function(par,cones,diam){
+negloglik.fn1 <- function(par, cones, diam){
   mu1 <- par["b0"] + par["b1"]*log(diam)
   lambda <- exp(mu1)
   nLL1 <- -sum(dpois(x = cones, lambda = lambda, log = T))
   return(nLL1)
 }
+
 start.par <- c(b0 = -5, b1 = 2)
 mle.pars1 <- optim(par = start.par,fn = negloglik.fn1, cones = Y, diam = X )
 mle.pars1
 
 
-# model (2)
+# Model (2)
 plot(X^2,Y)
 
-neglink.fn1 <- function(par,cones,diam){
+neglink.fn1 <- function(par, cones, diam){
   lambda2 <- par['b']* diam^2
-  nLL2 <-  -sum(dpois(x = cones, lambda = lambda2,log = T))
+  nLL2 <- -sum(dpois(x = cones, lambda = lambda2, log = T))
   return(nLL2)
 }
 
@@ -37,135 +38,86 @@ start.par <- c(b = 1)
 mle.pars2 <- optim(par = start.par,fn = neglink.fn1 ,cones = Y, diam = X )
 mle.pars2
 
-#Question 2
-#model(1)
-trt <- c('AMB','CO2','AMB')
-AMB <- 1
-CO2 <- 2
-K.trt <- c(AMB, CO2)
-names(K.trt) <- c('AMB','CO2')
-K.vec <- K.trt[trt]
 
-negloglik.fn2 <- function(par,cones,diam,trt){
-    K.vec <- K.trt[trt]
-    mu <- par["b0"] + par["b1"]*log(diam) + par["b2"]*log(K.vec)
-    lambda <- exp(mu)
-    nLL <- -sum(dpois(x = cones, lambda = lambda, log = T))
-  return(nLL)
-}
-start.par <- c(b0=0, b1 = 0, b2= 0, AMB= 0, CO2 =0)
-mle.pars.trt <- optim(par = start.par,fn = negloglik.fn2, trt = Dat$tmt, 
-                      cones = Dat$cones, diam = Dat$diam )
+# Model(1.1)
 
-#model(2)
-trt <- c('AMB','CO2','AMB')
-AMB <- 1
-CO2 <- 2
-K.trt <- c(AMB, CO2)
-names(K.trt) <- c('AMB','CO2')
-K.vec <- K.trt[trt]
-
-neglink.fn2 <- function(par,cones,diam,trt){
-  K.vec <- K.trt[trt]
-  mu <- par["b0"]*(Dat$diam)^2 + par["b1"]*K.vec
-  lambda <- mu
-  nLL <- -sum(dpois(x = cones, lambda = lambda, log = T))
+negloglik.fn2 <- function(par, cones, diam, tmt){
+  b1 <- c(par['b1.AMB'], par['b1.CO2']) # vector of slope parameters to be chosen from according to 'tmt'
+  names(b1) <- c('AMB','CO2') 
+  mu <- par['b0'] + b1[tmt] * log(diam) # linear predictor
+  lambda <- exp(mu)                     # link function
+  nLL <- - sum( dpois(x = cones, lambda = lambda, log = T) ) # neg. log-Likelihood
   return(nLL)
 }
 
-start.par <- c(b0 = 1, b1=1, AMB =1, CO2 =2)
-mle.pars2.2 <- optim(par = start.par,fn = neglink.fn2,
-                   cones = Dat$cones, diam = Dat$diam,trt = Dat$tmt)
-mle.pars2.2
+start.par <- c(b0 = 0, b1.AMB = 0, b1.CO2 = 0)
+MLE.1.tmt <- optim(par = start.par, fn = negloglik.fn2, 
+                   cones = Dat$cones, diam = Dat$diam, tmt = Dat$tmt)
+print(MLE.1.tmt)
 
-#Question3
-#model(1)
-par.mle.1 <- mle.pars1$par
-AIC.mle.1 <- 2*mle.pars1$value + 2*length(par.mle.1) #3638.134
+# Model(2.1)
 
-par.mle.1.1 <- mle.pars.trt$par
-AIC.mle.1.1 <- 2*mle.pars.trt$value + 2*length(par.mle.1.1) #3469.639
+neglink.fn2 <- function(par, cones, diam, tmt){
+  b1 <- c(par['b1.AMB'], par['b1.CO2']) # vector of slope parameters to be chosen from according to 'tmt'
+  names(b1) <- c('AMB','CO2') 
+  lambda <- b1[tmt] * diam^2            # linear predictor
+  nLL <- - sum( dpois(x = cones, lambda = lambda, log = T) )  # neg. log-Likelihood
+  return(nLL)
+}
 
-AIC.mle.1 - AIC.mle.1.1  #168.4822
-# AIC.mle.1.1 is smaller, so treatments should be considered in the predicted model.
-# AIC.mle.1.1 has the smallest AIC values among the four models, so it's the 
-# best prediction models in the excercise.
+start.par <- c(b1.AMB = 0.02, b1.CO2 = 0.02)  
+MLE.2.tmt <- optim(par = start.par, fn = neglink.fn2, 
+                   cones = Dat$cones, diam = Dat$diam, tmt = Dat$tmt)
+print(MLE.2.tmt)
 
-#model (2)
+####################################################################
+# Model comparison with AIC
+AIC.1 <- 2*mle.pars1$value + 2*length(mle.pars1$par)
+AIC.1.tmt <- 2*MLE.1.tmt$value + 2*length(MLE.1.tmt$par)
+AIC.2 <- 2*mle.pars2$value + 2*length(mle.pars2$par)
+AIC.2.tmt <- 2*MLE.2.tmt$value + 2*length(MLE.2.tmt$par)
 
-par.mle.2 <- mle.pars2$par
-AIC.mle.2 <- 2*mle.pars2$value + 2*length(par.mle.2) #3805.93
+data.frame(AIC.1, AIC.1.tmt, AIC.2, AIC.2.tmt)
+min(AIC.1, AIC.1.tmt, AIC.2, AIC.2.tmt)
 
-par.mle.2.2 <- mle.pars2.2$par
-AIC.mle.2.2 <- 2*mle.pars2.2$value + 2*length(par.mle.2.2) #3778.414
+# Bootstrapping for Model 1.1
 
-AIC.mle.2 - AIC.mle.2.2 #27.51594
-#AIC.mle.2.2 is smaller
+n.boot <- 10000
+n.par <- 3 # number of parameters in the model
+PAR <- matrix(nrow = n.boot, ncol = n.par)
 
-#Question 4
-
-#negloglik.fn2 is the best model, according to AIC result, the smalllest AIC.
-#model with treatments distingushed
-
-n.boot <- 1000   # number of resamples for the Bootstrapping 
-n.par <- 5      # number of parameters ?n the model
-n <- nrow(Dat)
-# create a matrix to store parameter estimates
-PAR <- matrix(0, nrow = n.boot, ncol = n.par)
-
-start.par <- par.mle.1.1
+start.par <- MLE.1.tmt$par
 
 for(i in 1:n.boot){
-  res.ind <- sample(1:nrow(Dat), size = nrow(Dat), replace = TRUE)
-  cones.res <- Dat$cones[res.ind]
-  diam.res <- Dat$diam[res.ind]
-  trt.res <- Dat$tmt[res.ind]
-  mle <- optim(par = start.par, fn = negloglik.fn2, 
-               cones = cones.res, diam= diam.res, trt=trt.res)
-  PAR[i,] <- mle$par
+  res.ind <- sample.int(nrow(Dat), replace = TRUE)
+  Dat.res <- Dat[res.ind,]
+  
+  MLE.res <- optim(par = start.par, fn = negloglik.fn2, 
+                   cones = Dat.res$cones, diam = Dat.res$diam, 
+                   tmt = Dat.res$tmt)
+  
+  PAR[i,] <- MLE.res$par
 }
 
 # naming the columns PAR according to names in par 
-colnames(PAR) <- names(mle$par)
+colnames(PAR) <- names(MLE.res$par)
+# and convert to data frame
 PAR <- as.data.frame(PAR)
-plot(PAR)
 summary(PAR)
-# standard errors (SE)
-sd(PAR$b0) #0.1990947
-sd(PAR$b1) #0.06207156
-sd(PAR$b2) #0.06501213
-sd(PAR$AMB) #2.294434
-sd(PAR$CO2) #2.261097
-sapply(PAR,sd)
-#     b0         b1         b2        AMB        CO2 
-# 0.19909468 0.06207156 0.06501213 2.29443422 2.26109706 
+plot(PAR)
 
-# 95% confidence intervals
-sapply(PAR, quantile, prob = c(0.025, 0.975))
-#         b0       b1        b2       AMB       CO2
-# 2.5%  -6.432131 2.493096 0.4805737 -4.296367 -1.551493
-# 97.5% -5.665994 2.735102 0.7375016  4.278190  7.375307
+# Calculate limits of confidence intervals as 2.5% and 97.5% quantile
+quantile(x = PAR$b0, prob = c(0.025, 0.975))
+quantile(x = PAR$b1.AMB, prob = c(0.025, 0.975))
+quantile(x = PAR$b1.CO2, prob = c(0.025, 0.975))
 
-#plot
-Cols <- c('AMB' = 'red','CO2'='blue') 
-plot(Dat$diam, Dat$cones, col = Cols[Dat$tmt], xlab ="Diameter", ylab="Number of cones",
-     main = "Correlation between diameter of pine trees and numbers of cones")
-legend("topleft",pch =1, col= c('red','blue','purple'), legend= c('AMB','CO2','No treatment effect'))
+# Plot bootstrap samples for 'b1.AMB' and 'b1.CO2' as histograms
+# set up two plot panels on top of each other 
+par(mfrow = c(2,1))
+# get total range of parameter values (as equal x-axis limits in both plots)
+x.range <- range( c(PAR$b1.AMB, PAR$b1.CO2) )
+hist(PAR$b1.AMB, col = Col['AMB'], xlim = x.range)
+hist(PAR$b1.CO2, col = Col['CO2'], xlim = x.range)
+####################################################################
 
-das.pred <- 1:45 # vector of DaS values for which predictions are calculated
-b0 <- par.mle.1.1['b0']
-b1 <- par.mle.1.1['b1']
-b2 <- par.mle.1.1['b2']
-AMB <- par.mle.1.1['AMB']
-CO2 <- par.mle.1.1['CO2']
 
-M.pred.AMB <- b0 + b1*log(das.pred) + b2 * log(AMB)
-lines(x = das.pred, y= exp(M.pred.AMB), col = 'red')
-
-M.pred.CO2 <- b0 + b1*log(das.pred) + b2 * log(CO2)
-lines(x = das.pred, y= exp(M.pred.CO2), col = 'blue')
-
-M.pred <- par.mle.1['b0'] + par.mle.1['b1']*log(das.pred)
-lines(x = das.pred, y= exp(M.pred), col = 'purple')
-
-### END ###
