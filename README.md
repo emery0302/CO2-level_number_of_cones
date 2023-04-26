@@ -32,7 +32,7 @@ At the end, the uncertainty of all parameters in the selected best model, which 
 
 
 ## Conclusion
-According to our analysis result, the prediction model performed better when the treatment effect is considered as a part of model than without considered it. Besides, model 1 can provide a better prediction of cone production than model 2, which means the relationship between tree size and numbers of cones can be explained better by logarithm, compared to square. Therefore, we can conclude that larger pine tree can produce more cones during the pine production period. Moreover, we got the same result as LaDeau & Clark (2001), when CO2 concentration is higher in the atmosphere, forest trees can produce more cones than the atmosphere is normally ambient CO2 concentration. 
+According to our analysis result, the prediction model performed better when the treatment effect is considered as a part of model than without considerimg it. Besides, model 1 can provide a better prediction of cone production than model 2, which means the relationship between tree sizes and numbers of cones can be explained better by logarithm than square. Therefore, we can conclude that larger pine tree can produce more cones during the pine production period. Moreover, we got the same result as LaDeau & Clark (2001), when CO2 concentration is higher in the atmosphere, forest trees can produce more cones than the atmosphere is normally ambient CO2 concentration. 
 
 ## Reference
 LaDeau, S. L, & Clark, J. S. (2001). Raising CO2 levels and the fecundity of forest tree. Science 292, 95; DOI: 10.1126/science.1057547 
